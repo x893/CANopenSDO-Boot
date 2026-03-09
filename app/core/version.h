@@ -1,12 +1,7 @@
-#ifndef VERSION_H
-#define VERSION_H
-
 #ifndef COMMIT_ID
-#define COMMIT_ID 0xc54ee7f
+#define COMMIT_ID 0x2c6fd14
+#ifndef COMMIT_ID
+#error "COMMIT_ID Not define"
+#define COMMIT_ID 000000
 #endif
-
-#ifndef KERNEL_BUILD_VERSION
-#define KERNEL_BUILD_VERSION COMMIT_ID
-#endif
-
 #endif
