@@ -1,0 +1,17 @@
+﻿.vs/
+listings/
+objects/
+build/
+*.uvguix.*
+*.uvgui.*
+*.uvoptx
+*.scvd
+*.obj
+*.log
+*.bak
+*.tlog/
+JLinkSettings.ini
+JLinkLog.txt
+obj/
+bin/
+*.pyc
