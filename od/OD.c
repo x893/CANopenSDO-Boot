@@ -265,7 +265,7 @@ static CO_PROGMEM ODObjs_t ODObjs = {
     },
     .o_5F02_fwUpdateData = {
         .dataOrig = NULL,
-        .attribute = ODA_SDO_RW,
+        .attribute = ODA_SDO_W,
         .dataLength = 0
     },
     .o_5F03_fwUpdateInfo = {

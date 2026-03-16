@@ -1,0 +1,17 @@
+{
+
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug firmware (cortex-debug)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/CANopenSDO-Boot.elf",
+            "servertype": "external",
+            "gdbPath": "arm-none-eabi-gdb.exe",
+            "device": "ARM Cortex-M"
+            // "svdFile": null
+        }
+    ]
+}

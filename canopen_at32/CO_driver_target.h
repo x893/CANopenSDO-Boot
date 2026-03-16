@@ -165,9 +165,8 @@ typedef struct {
 
 bool_t CANTxQueuePut(CAN_TX_QUEUE_TYPE* packet);
 bool_t CANRxQueuePut(CAN_RX_QUEUE_TYPE* packet);
-bool_t CANQueuePutMirror(CAN_RX_QUEUE_TYPE* rxPacket, CAN_TX_QUEUE_TYPE* txPacket);
 bool_t CO_LSSchkBitrateCallback(void* object, uint16_t bitRate);
-void CANUpdate(void);
+void CANSendReceive(void);
 
 #ifdef __cplusplus
 }

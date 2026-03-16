@@ -1,0 +1,8 @@
+{
+    // Локальные настройки только для этого проекта
+    "files.associations": {
+        "*.h": "c"
+    },
+    "C_Cpp.default.configurationProvider": null,
+    "C_Cpp.errorSquiggles": "Enabled"
+}

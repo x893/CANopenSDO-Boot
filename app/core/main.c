@@ -49,7 +49,8 @@ int main(void)
 {
 	CO_t* CO;
 	CO_NMT_reset_cmd_t reset_status = CO_RESET_NOT;
-	uint32_t time_old, time_current, time_interval, time_interval_us;
+	uint32_t time_last, time_current, time_interval;
+	uint32_t time_interval_us = 0;
 
 	Clock_PreInit();
 	delay_init();
@@ -72,7 +73,7 @@ int main(void)
 		canOpenNodeAT32->lssBitrate = 250;
 		canOpenNodeAT32->baudrate = 250;
 	}
-	if (canOpenNodeAT32->desiredNodeID < 1)
+	if (canOpenNodeAT32->desiredNodeID < 1 || canOpenNodeAT32->desiredNodeID > 0x7F)
 		canOpenNodeAT32->desiredNodeID = CO_LSS_NODE_ID_ASSIGNMENT;
 
 	if (ERR_NONE != Init_AT32F415())
@@ -87,7 +88,7 @@ int main(void)
 		if (app_canopen_init() != 0)
 			ErrorHandler(ERR_CAN_FAIL);
 
-		time_old = Timer_GetTicks();
+		time_last = Timer_GetTicks();
 		reset_status = CO_RESET_NOT;
 
 		while (reset_status == CO_RESET_NOT)
@@ -95,36 +96,36 @@ int main(void)
 #ifdef USE_DEBUG
 			StackCheck();
 #endif
+			WDT_RESET();
+
 			time_current = Timer_GetTicks();
-			time_interval = time_current - time_old;
+			time_interval = time_current - time_last;
 			if (time_interval != 0)
 			{
 				time_interval_us = time_interval * 1000;
-				time_old = time_current;
-
-				WDT_RESET();
-				CANUpdate();
-
-				WDT_RESET();
-				reset_status = CO_process(CO, false, time_interval_us, NULL);
-
-				WDT_RESET();
-				if (reset_status == CO_RESET_COMM)
-				{
-					CO_CANsetConfigurationMode(canOpenNodeAT32);
-					break;
-				}
-				else if (reset_status == CO_RESET_APP)
-				{
-					break;
-				}
-
-				if ((!CO->nodeIdUnconfigured) && CO->CANmodule->CANnormal)
-				{
-					WDT_RESET();
-					app_program1ms(time_interval);
-				}
+				time_last = time_current;
 			}
+
+			CANSendReceive();
+
+			reset_status = CO_process(CO, false, time_interval_us, NULL);
+
+			if (reset_status == CO_RESET_COMM)
+			{
+				CO_CANsetConfigurationMode(canOpenNodeAT32);
+				break;
+			}
+			else if (reset_status == CO_RESET_APP)
+			{
+				break;
+			}
+
+			if ((!CO->nodeIdUnconfigured) && CO->CANmodule->CANnormal)
+			{
+				WDT_RESET();
+				app_program1ms(time_interval);
+			}
+			time_interval_us = 0;
 		}
 		tmr_counter_enable(canOpenNodeAT32->timerHandle, FALSE);
 	}
@@ -138,6 +139,7 @@ int main(void)
 __NO_RETURN
 void ErrorHandler(ERROR_CODES_t errorCode)
 {
+	(void)errorCode;
 	__disable_irq();
 	delay_ms(5000);
 	NVIC_SystemReset();
@@ -147,18 +149,32 @@ void ErrorHandler(ERROR_CODES_t errorCode)
 #include <sys/reent.h>
 int _close(struct _reent *r, int x)
 {
+	(void)r;
+	(void)x;
 	return 0;
 }
 _off_t _lseek_r(struct _reent *r, int x, _off_t o, int y)
 {
+	(void)r;
+	(void)x;
+	(void)o;
+	(void)y;
 	return (_off_t)0;
 }
 _ssize_t _read_r(struct _reent *r, int x, void *v, size_t s)
 {
+	(void)r;
+	(void)x;
+	(void)v;
+	(void)s;
 	return 0;
 }
 _ssize_t _write_r(struct _reent *r, int x, const void *v, size_t s)
 {
+	(void)r;
+	(void)x;
+	(void)v;
+	(void)s;
 	return 0;
 }
 #endif

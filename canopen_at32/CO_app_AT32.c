@@ -9,27 +9,27 @@
 #include "ota_stage.h"
 #include "debug.h"
 
-#define USE_AS_U32(a)			(*(uint32_t*)(&a))
-#define USE_AS_U16(a)			(*(uint16_t*)(&a))
-#define COUNT_OF_ELEMENTS(a)	(sizeof(a) / sizeof(a[0]))
+#define USE_AS_U32(a) (*(uint32_t *)(&a))
+#define USE_AS_U16(a) (*(uint16_t *)(&a))
+#define COUNT_OF_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
 
-#define NMT_CONTROL	(					\
-    CO_NMT_STARTUP_TO_OPERATIONAL	|	\
-	CO_ERR_REG_GENERIC_ERR			|	\
-	CO_ERR_REG_COMMUNICATION			\
-	)
-#define FIRST_HB_TIME        500
+#define NMT_CONTROL (               \
+	CO_NMT_STARTUP_TO_OPERATIONAL | \
+	CO_ERR_REG_GENERIC_ERR |        \
+	CO_ERR_REG_COMMUNICATION)
 /*
  * Keep server transfer context alive during OTA segmented download retries:
  * test tooling may wait up to 10s for segment response before retrying.
  */
-#define SDO_SRV_TIMEOUT_TIME 15000
-#define SDO_CLI_TIMEOUT_TIME 500
-#define SDO_CLI_BLOCK        false
-#define OD_STATUS_BITS       NULL
+
+#define SDO_CLI_BLOCK			false
+#define SDO_CLI_TIMEOUT_TIME	500
+#define SDO_SRV_TIMEOUT_TIME	15000
+
+#define OD_STATUS_BITS			NULL
+#define FIRST_HB_TIME			500
 
 #define OTA_CMD_START		0x01
-#define OTA_CMD_DATA		0x02
 #define OTA_CMD_END			0x03
 #define OTA_CMD_ABORT		0x04
 #define OTA_CMD_STATUS_REQ	0x05
@@ -45,42 +45,23 @@
 #define OTA_STATE_ERROR		0x05
 
 #define OTA_IMAGE_TYPE_KERNEL	0x00
-// #define OTA_IMAGE_TYPE_PLC    0x01
 
-#define OTA_ERR_INVALID_COMMAND 0x0001
-#define OTA_ERR_FORWARD_FAILED  0x0002
-#define OTA_ERR_INVALID_SIZE    0x0003
-#define OTA_ERR_APPLY_UNSUPP    0x0004
-#define OTA_ERR_CRC_MISMATCH    0x0005
-#define OTA_ERR_INVALID_TARGET  0x0006
-#define OTA_ERR_BAD_STATE       0x0007
-#define OTA_ERR_INVALID_IMAGE   0x0008
-#define OTA_ERR_STAGE_WRITE     0x0009
-
-#define OTA_DIAG_PHASE_NONE          0x00
-#define OTA_DIAG_PHASE_CTRL_START    0x10
-#define OTA_DIAG_PHASE_CTRL_END      0x11
-#define OTA_DIAG_PHASE_CTRL_ABORT    0x12
-#define OTA_DIAG_PHASE_CTRL_CHUNK    0x13
-#define OTA_DIAG_PHASE_DATA_ENTER    0x20
-#define OTA_DIAG_PHASE_DATA_STATE    0x21
-#define OTA_DIAG_PHASE_DATA_TARGET   0x22
-#define OTA_DIAG_PHASE_DATA_OVERSIZE 0x23
-#define OTA_DIAG_PHASE_DATA_RETURN   0x24
-#define OTA_DIAG_PHASE_DATA_TRANSPORT 0x25
-#define OTA_DIAG_PHASE_DATA_SDO_ABORT 0x26
-
-#define OTA_DIAG_RESULT_NONE    0x00
-#define OTA_DIAG_RESULT_OK      0x01
-#define OTA_DIAG_RESULT_PARTIAL 0x02
-#define OTA_DIAG_RESULT_ERROR   0x03
+#define OTA_ERR_INVALID_COMMAND	0x0001
+#define OTA_ERR_INVALID_SIZE	0x0003
+#define OTA_ERR_APPLY_UNSUPP	0x0004
+#define OTA_ERR_CRC_MISMATCH	0x0005
+#define OTA_ERR_INVALID_TARGET	0x0006
+#define OTA_ERR_BAD_STATE		0x0007
+#define OTA_ERR_INVALID_IMAGE	0x0008
+#define OTA_ERR_STAGE_WRITE		0x0009
 
 #define OTA_APPLY_DELAY_MS 200U
 
 /* Global variables and objects */
-CO_t* CO = NULL; /* CANopen object */
+CO_t *CO = NULL; /* CANopen object */
 
-typedef struct {
+typedef struct
+{
 	uint32_t ota_segment_index;
 	uint32_t ota_segment_completed;
 	uint32_t ota_image_crc32;
@@ -97,8 +78,7 @@ typedef struct {
 
 } OTA_Context_t;
 static OTA_Context_t OTA_Context = {
-	.ota_stage_pending_word_data = 0xFFFFFFFFU
-};
+	.ota_stage_pending_word_data = 0xFFFFFFFFU};
 
 static void ota_apply_cancel_pending(void);
 static void ota_apply_schedule_stage_swap(void);
@@ -106,7 +86,7 @@ static void ota_apply_process_pending(void);
 static void ota_stage_reset_cache(void);
 static bool ota_stage_flush_pending_word(void);
 
-static bool_t LSScfgStoreCallback(void* object, uint8_t id, uint16_t bitRate)
+static bool_t LSScfgStoreCallback(void *object, uint8_t id, uint16_t bitRate)
 {
 	CANOpenNodeAT32_t *node = (CANOpenNodeAT32_t *)object;
 	node->lssBitrate = node->baudrate = bitRate;
@@ -124,13 +104,14 @@ static bool_t LSScfgStoreCallback(void* object, uint8_t id, uint16_t bitRate)
 
 void app_program1ms(uint32_t ms)
 {
+	(void)ms;
 	ota_apply_process_pending();
 }
 
 /**
-  * @brief This function will basically setup the CANopen node
-  *
-  */
+ * @brief This function will basically setup the CANopen node
+ *
+ */
 int app_canopen_init()
 {
 	CO_ReturnError_t err;
@@ -139,7 +120,7 @@ int app_canopen_init()
 	CO->CANmodule->CANnormal = false;
 
 	/* Enter CAN configuration. */
-	CO_CANsetConfigurationMode((void*)canOpenNodeAT32);
+	CO_CANsetConfigurationMode((void *)canOpenNodeAT32);
 	CO_CANmodule_disable(CO->CANmodule);
 
 	/* initialize CANopen */
@@ -157,15 +138,12 @@ int app_canopen_init()
 			.vendorID = OD_RAM.x1018_identity.vendorID,
 			.productCode = OD_RAM.x1018_identity.productCode,
 			.revisionNumber = OD_RAM.x1018_identity.revisionNumber,
-			.serialNumber = OD_RAM.x1018_identity.serialNumber
-		}
-	};
+			.serialNumber = OD_RAM.x1018_identity.serialNumber}};
 	err = CO_LSSinit(
 		CO,
 		&lssAddress,
 		&canOpenNodeAT32->desiredNodeID,
-		&canOpenNodeAT32->lssBitrate
-	);
+		&canOpenNodeAT32->lssBitrate);
 	if (err != CO_ERROR_NO)
 	{
 		return 2;
@@ -175,16 +153,16 @@ int app_canopen_init()
 	uint32_t errInfo = 0;
 
 	err = CO_CANopenInit(
-		CO,						/* CANopen object */
-		NULL,					/* alternate NMT */
-		NULL,					/* alternate em */
-		OD,						/* Object dictionary */
-		OD_STATUS_BITS,			/* Optional OD_statusBits */
-        (uint16_t)(NMT_CONTROL),
+		CO,				/* CANopen object */
+		NULL,			/* alternate NMT */
+		NULL,			/* alternate em */
+		OD,				/* Object dictionary */
+		OD_STATUS_BITS, /* Optional OD_statusBits */
+		(uint16_t)(NMT_CONTROL),
 		FIRST_HB_TIME,
-		SDO_SRV_TIMEOUT_TIME,	/* SDOserverTimeoutTime_ms */
-		SDO_CLI_TIMEOUT_TIME,	/* SDOclientTimeoutTime_ms */
-		SDO_CLI_BLOCK,			/* SDOclientBlockTransfer */
+		SDO_SRV_TIMEOUT_TIME, /* SDOserverTimeoutTime_ms */
+		SDO_CLI_TIMEOUT_TIME, /* SDOclientTimeoutTime_ms */
+		SDO_CLI_BLOCK,		  /* SDOclientBlockTransfer */
 		canOpenNodeAT32->activeNodeID,
 		&errInfo);
 	if (err != CO_ERROR_NO && err != CO_ERROR_NODE_ID_UNCONFIGURED_LSS)
@@ -193,8 +171,8 @@ int app_canopen_init()
 	}
 
 	/* initialize callbacks */
-    CO_LSSslave_initCkBitRateCall(CO->LSSslave, NULL, CO_LSSchkBitrateCallback);
-    CO_LSSslave_initCfgStoreCall(CO->LSSslave, canOpenNodeAT32, LSScfgStoreCallback);
+	CO_LSSslave_initCkBitRateCall(CO->LSSslave, NULL, CO_LSSchkBitrateCallback);
+	CO_LSSslave_initCfgStoreCall(CO->LSSslave, canOpenNodeAT32, LSScfgStoreCallback);
 
 	if (err != CO_ERROR_NO && err != CO_ERROR_NODE_ID_UNCONFIGURED_LSS)
 	{
@@ -214,18 +192,19 @@ int app_canopen_init()
 /* Large synthetic domain register (0x2200) for stress read/write over segmented SDO.
  * Payload pattern is deterministic: byte[offset] == (offset & 0xFF).
  * It allows large transfer validation without allocating a large RAM buffer. */
-#define DOMAIN_UPLOAD_MAX_SIZE     ((OD_size_t)(128U * 1024U))
+#define DOMAIN_UPLOAD_MAX_SIZE ((OD_size_t)(128U * 1024U))
 #define DOMAIN_UPLOAD_DEFAULT_SIZE ((OD_size_t)(64U * 1024U))
 
 /* Current logical size exposed by reads; updated after successful complete writes. */
 static OD_size_t dataSize = DOMAIN_UPLOAD_DEFAULT_SIZE;
 
+#ifdef USE_DOMAIN_READ
+
 static uint8_t domain_pattern_byte(OD_size_t offset)
 {
 	return (uint8_t)(offset & 0xFFU);
 }
-
-static ODR_t OD_read_domainUpload(OD_stream_t* stream, void* buf, OD_size_t count, OD_size_t* countRead)
+static ODR_t OD_read_fwUpdateData(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead)
 {
 	if (stream == NULL || buf == NULL || countRead == NULL || stream->subIndex != 0)
 		return ODR_DEV_INCOMPAT;
@@ -246,7 +225,7 @@ static ODR_t OD_read_domainUpload(OD_stream_t* stream, void* buf, OD_size_t coun
 
 	OD_size_t remaining = dataSize - stream->dataOffset;
 	OD_size_t toRead = (count < remaining) ? count : remaining;
-	register uint8_t* bufU8 = (uint8_t*)buf;
+	register uint8_t *bufU8 = (uint8_t *)buf;
 	OD_size_t i;
 	for (i = 0; i < toRead; i++)
 	{
@@ -264,49 +243,20 @@ static ODR_t OD_read_domainUpload(OD_stream_t* stream, void* buf, OD_size_t coun
 	return ODR_PARTIAL;
 }
 
-/*
- * Custom function for reading OD object _domainUpload_
- *
- * For more information see file CO_ODinterface.h, OD_IO_t.
- */
-static ODR_t OD_write_domainUpload(OD_stream_t* stream, const void* buf, OD_size_t count, OD_size_t* countWritten)
+#else
+
+static ODR_t OD_read_fwUpdateData(OD_stream_t *stream, void *buf,
+								  OD_size_t count, OD_size_t *countRead)
 {
-	if (stream == NULL || buf == NULL || countWritten == NULL || stream->subIndex != 0)
-		return ODR_DEV_INCOMPAT;
-
-	if (stream->dataOffset > DOMAIN_UPLOAD_MAX_SIZE || count > (DOMAIN_UPLOAD_MAX_SIZE - stream->dataOffset))
-		return ODR_DATA_LONG;
-
-	register const uint8_t* bufU8 = (const uint8_t*)buf;
-	OD_size_t i;
-	for (i = 0; i < count; i++)
-	{
-		if (bufU8[i] != domain_pattern_byte(stream->dataOffset + i))
-		{
-			return ODR_INVALID_VALUE;
-		}
-	}
-	*countWritten = count;
-	stream->dataOffset += count;
-
-	if (stream->dataLength > 0 && stream->dataOffset >= stream->dataLength)
-	{
-		if (stream->dataOffset > DOMAIN_UPLOAD_MAX_SIZE)
-			return ODR_DATA_LONG;
-
-		dataSize = stream->dataOffset;
-		stream->dataOffset = 0;
-		return ODR_OK;
-	}
-
-	return ODR_PARTIAL;
+	(void)stream;
+	(void)buf;
+	(void)count;
+	if (countRead != NULL)
+		*countRead = 0;
+	return ODR_WRITEONLY;
 }
 
-static OD_extension_t domainUpload_extension = {
-	.object = NULL,
-	.read = OD_read_domainUpload,
-	.write = OD_write_domainUpload
-};
+#endif
 
 static void ota_diag_reset(void)
 {
@@ -325,7 +275,7 @@ static void ota_apply_cancel_pending(void)
 static void ota_stage_reset_cache(void)
 {
 	register OTA_Context_t *ctx = &OTA_Context;
-	
+
 	ctx->ota_stage_pending_word_valid = false;
 	ctx->ota_stage_pending_word_addr = 0;
 	ctx->ota_stage_pending_word_data = 0xFFFFFFFFU;
@@ -361,7 +311,9 @@ static bool ota_stage_prepare(uint32_t imageSize)
 	uint32_t eraseLen;
 	uint32_t addr;
 
-	if (imageSize == 0U || imageSize > OTA_KERNEL_MAX_IMAGE_SIZE)
+	(void)eraseLen;
+	
+	if (imageSize == 0U || imageSize > OTA_STAGE_REGION_SIZE)
 		return false;
 	if ((OTA_FLASH_BASE_ADDR + imageSize) > OTA_STAGE_REGION_START)
 		return false;
@@ -381,8 +333,7 @@ static bool ota_stage_prepare(uint32_t imageSize)
 	for (
 		addr = OTA_STAGE_REGION_START;
 		addr < (OTA_STAGE_REGION_START + eraseLen);
-		addr += OTA_FLASH_PAGE_SIZE_BYTES
-		)
+		addr += OTA_FLASH_PAGE_SIZE_BYTES)
 	{
 		if (flash_sector_erase(addr) != FLASH_OPERATE_DONE)
 		{
@@ -407,7 +358,7 @@ static bool ota_stage_write_chunk(uint32_t offset, const uint8_t *data, OD_size_
 		return false;
 	if ((uint32_t)len == 0U)
 		return true;
-	if (offset >= OTA_KERNEL_MAX_IMAGE_SIZE || ((uint32_t)len > (OTA_KERNEL_MAX_IMAGE_SIZE - offset)))
+	if (offset >= OTA_STAGE_REGION_SIZE || ((uint32_t)len > (OTA_STAGE_REGION_SIZE - offset)))
 		return false;
 	if (offset != ctx->ota_stage_next_offset)
 		return false;
@@ -456,7 +407,8 @@ static void ota_apply_schedule_stage_swap(void)
 
 __WEAK void OtaBoot_ApplyFromStage(uint32_t imageSize, uint32_t expectedCrc32)
 {
-
+	(void)imageSize;
+	(void)expectedCrc32;
 }
 
 static void ota_apply_process_pending(void)
@@ -473,8 +425,7 @@ static void ota_apply_process_pending(void)
 	ota_apply_cancel_pending();
 	OtaBoot_ApplyFromStage(
 		OD_RAM.x5F01_fwUpdateStatus.bytesWritten,
-		OD_RAM.x5F01_fwUpdateStatus.imageCRC32
-	);
+		OD_RAM.x5F01_fwUpdateStatus.imageCRC32);
 }
 
 static void ota_reset_status(void)
@@ -485,9 +436,9 @@ static void ota_reset_status(void)
 	OD_RAM.x5F01_fwUpdateStatus.bytesWritten = 0x00000000;
 	OD_RAM.x5F01_fwUpdateStatus.imageCRC32 = 0x00000000;
 	OD_RAM.x5F01_fwUpdateStatus.progress = 0x00;
-	
+
 	register OTA_Context_t *ctx = &OTA_Context;
-	
+
 	ctx->ota_data_transfer_session = false;
 	ctx->ota_segment_index = 0;
 	ctx->ota_segment_completed = 0;
@@ -568,8 +519,12 @@ static bool ota_verify_received_image(void)
 	return true;
 }
 
-static ODR_t OD_write_fwUpdateControl(OD_stream_t *stream, const void *buf,
-							OD_size_t count, OD_size_t *countWritten)
+static ODR_t OD_write_fwUpdateControl(
+	OD_stream_t *stream,
+	const void *buf,
+	OD_size_t count,
+	OD_size_t *countWritten
+	)
 {
 	ODR_t result = OD_writeOriginal(stream, buf, count, countWritten);
 	if (result != ODR_OK)
@@ -585,111 +540,102 @@ static ODR_t OD_write_fwUpdateControl(OD_stream_t *stream, const void *buf,
 
 	switch (OD_RAM.x5F00_fwUpdateControl.command)
 	{
-		case OTA_CMD_START:
-			if (OD_RAM.x5F00_fwUpdateControl.target != OTA_TARGET_AT32)
-			{
-				ota_set_error(OTA_ERR_INVALID_TARGET);
-				return ODR_INVALID_VALUE;
-			}
-			if (OD_RAM.x5F00_fwUpdateControl.target == OTA_TARGET_AT32 &&
-				OD_RAM.x5F00_fwUpdateControl.imageType != OTA_IMAGE_TYPE_KERNEL)
-			{
-				ota_set_error(OTA_ERR_INVALID_IMAGE);
-				return ODR_INVALID_VALUE;
-			}
-			ota_reset_status();
-			OTA_Context.ota_data_transfer_session = true;
-			if (OD_RAM.x5F00_fwUpdateControl.target == OTA_TARGET_AT32)
-			{
-				if (!ota_stage_prepare(OD_RAM.x5F00_fwUpdateControl.expectedSize))
-				{
-					ota_set_error(OTA_ERR_INVALID_SIZE);
-					return ODR_INVALID_VALUE;
-				}
-			}
-			OD_RAM.x5F01_fwUpdateStatus.state = OTA_STATE_RECV;
-			break;
-		case OTA_CMD_END:
-			if (OD_RAM.x5F01_fwUpdateStatus.state != OTA_STATE_RECV)
-			{
-				ota_set_error(OTA_ERR_BAD_STATE);
-				return ODR_INVALID_VALUE;
-			}
-			if (OD_RAM.x5F00_fwUpdateControl.target == OTA_TARGET_AT32)
-			{
-				if (!ota_stage_flush_pending_word())
-				{
-					ota_set_error(OTA_ERR_STAGE_WRITE);
-					return ODR_HW;
-				}
-			}
-			OD_RAM.x5F01_fwUpdateStatus.state = OTA_STATE_VERIFY;
-			if (!ota_verify_received_image())
-				return ODR_INVALID_VALUE;
-			if (OD_RAM.x5F00_fwUpdateControl.target != OTA_TARGET_AT32)
-			{
-				ota_set_error(OTA_ERR_INVALID_TARGET);
-				return ODR_INVALID_VALUE;
-			}
-			OD_RAM.x5F01_fwUpdateStatus.state = OTA_STATE_FLASH;
-			/* For both targets we count accepted payload as written.
-			 * Actual low-level apply/reboot is board-specific and can be triggered separately. */
-			OD_RAM.x5F01_fwUpdateStatus.bytesWritten = OD_RAM.x5F01_fwUpdateStatus.bytesReceived;
-			ota_update_progress();
-			ota_set_success();
-			break;
-		case OTA_CMD_ABORT:
-			ota_reset_status();
-			break;
-		case OTA_CMD_STATUS_REQ:
-			break;
-		case OTA_CMD_APPLY:
-			if (OD_RAM.x5F00_fwUpdateControl.target != OTA_TARGET_AT32)
-			{
-				ota_set_error(OTA_ERR_APPLY_UNSUPP);
-				return ODR_INVALID_VALUE;
-			}
-			if (OD_RAM.x5F00_fwUpdateControl.imageType != OTA_IMAGE_TYPE_KERNEL)
-			{
-				ota_set_error(OTA_ERR_INVALID_IMAGE);
-				return ODR_INVALID_VALUE;
-			}
-			if (OD_RAM.x5F01_fwUpdateStatus.state != OTA_STATE_REBOOT ||
-				OD_RAM.x5F01_fwUpdateStatus.lastError != 0 ||
-				OD_RAM.x5F01_fwUpdateStatus.bytesReceived == 0 ||
-				OD_RAM.x5F01_fwUpdateStatus.bytesReceived != OD_RAM.x5F01_fwUpdateStatus.bytesWritten
-				)
-			{
-				ota_set_error(OTA_ERR_BAD_STATE);
-				return ODR_INVALID_VALUE;
-			}
-			ota_apply_schedule_stage_swap();
-			break;
-		default:
-			ota_set_error(OTA_ERR_INVALID_COMMAND);
+	case OTA_CMD_START:
+		if (OD_RAM.x5F00_fwUpdateControl.target != OTA_TARGET_AT32)
+		{
+			ota_set_error(OTA_ERR_INVALID_TARGET);
 			return ODR_INVALID_VALUE;
+		}
+		if (OD_RAM.x5F00_fwUpdateControl.target == OTA_TARGET_AT32 &&
+			OD_RAM.x5F00_fwUpdateControl.imageType != OTA_IMAGE_TYPE_KERNEL)
+		{
+			ota_set_error(OTA_ERR_INVALID_IMAGE);
+			return ODR_INVALID_VALUE;
+		}
+		ota_reset_status();
+		OTA_Context.ota_data_transfer_session = true;
+		if (OD_RAM.x5F00_fwUpdateControl.target == OTA_TARGET_AT32)
+		{
+			if (!ota_stage_prepare(OD_RAM.x5F00_fwUpdateControl.expectedSize))
+			{
+				ota_set_error(OTA_ERR_INVALID_SIZE);
+				return ODR_INVALID_VALUE;
+			}
+		}
+		OD_RAM.x5F01_fwUpdateStatus.state = OTA_STATE_RECV;
+		break;
+	case OTA_CMD_END:
+		if (OD_RAM.x5F01_fwUpdateStatus.state != OTA_STATE_RECV)
+		{
+			ota_set_error(OTA_ERR_BAD_STATE);
+			return ODR_INVALID_VALUE;
+		}
+		if (OD_RAM.x5F00_fwUpdateControl.target == OTA_TARGET_AT32)
+		{
+			if (!ota_stage_flush_pending_word())
+			{
+				ota_set_error(OTA_ERR_STAGE_WRITE);
+				return ODR_HW;
+			}
+		}
+		OD_RAM.x5F01_fwUpdateStatus.state = OTA_STATE_VERIFY;
+		if (!ota_verify_received_image())
+			return ODR_INVALID_VALUE;
+		if (OD_RAM.x5F00_fwUpdateControl.target != OTA_TARGET_AT32)
+		{
+			ota_set_error(OTA_ERR_INVALID_TARGET);
+			return ODR_INVALID_VALUE;
+		}
+		OD_RAM.x5F01_fwUpdateStatus.state = OTA_STATE_FLASH;
+		/* For both targets we count accepted payload as written.
+		 * Actual low-level apply/reboot is board-specific and can be triggered separately. */
+		OD_RAM.x5F01_fwUpdateStatus.bytesWritten = OD_RAM.x5F01_fwUpdateStatus.bytesReceived;
+		ota_update_progress();
+		ota_set_success();
+		break;
+	case OTA_CMD_ABORT:
+		ota_reset_status();
+		break;
+	case OTA_CMD_STATUS_REQ:
+		break;
+	case OTA_CMD_APPLY:
+		if (OD_RAM.x5F00_fwUpdateControl.target != OTA_TARGET_AT32)
+		{
+			ota_set_error(OTA_ERR_APPLY_UNSUPP);
+			return ODR_INVALID_VALUE;
+		}
+		if (OD_RAM.x5F00_fwUpdateControl.imageType != OTA_IMAGE_TYPE_KERNEL)
+		{
+			ota_set_error(OTA_ERR_INVALID_IMAGE);
+			return ODR_INVALID_VALUE;
+		}
+		if (OD_RAM.x5F01_fwUpdateStatus.state != OTA_STATE_REBOOT ||
+			OD_RAM.x5F01_fwUpdateStatus.lastError != 0 ||
+			OD_RAM.x5F01_fwUpdateStatus.bytesReceived == 0 ||
+			OD_RAM.x5F01_fwUpdateStatus.bytesReceived != OD_RAM.x5F01_fwUpdateStatus.bytesWritten)
+		{
+			ota_set_error(OTA_ERR_BAD_STATE);
+			return ODR_INVALID_VALUE;
+		}
+		ota_apply_schedule_stage_swap();
+		break;
+	default:
+		ota_set_error(OTA_ERR_INVALID_COMMAND);
+		return ODR_INVALID_VALUE;
 	}
 	return result;
 }
 
-static ODR_t OD_read_fwUpdateData(OD_stream_t *stream, void *buf,
-							OD_size_t count, OD_size_t *countRead)
-{
-	(void)stream;
-	(void)buf;
-	(void)count;
-	if (countRead != NULL)
-		*countRead = 0;
-	return ODR_WRITEONLY;
-}
 
 static ODR_t OD_write_fwUpdateData(OD_stream_t *stream, const void *buf,
-							OD_size_t count, OD_size_t *countWritten)
+								   OD_size_t count, OD_size_t *countWritten)
 {
 	register OTA_Context_t *ctx = &OTA_Context;
-	
+
 	uint32_t before_offset;
 	uint32_t expected = 0;
+
+	(void)before_offset;
 
 	if (stream == NULL || buf == NULL || countWritten == NULL || stream->subIndex != 0)
 		return ODR_DEV_INCOMPAT;
@@ -773,25 +719,22 @@ static ODR_t OD_write_fwUpdateData(OD_stream_t *stream, const void *buf,
 static OD_extension_t ota_control_extension = {
 	.object = NULL,
 	.read = OD_readOriginal,
-	.write = OD_write_fwUpdateControl
-};
+	.write = OD_write_fwUpdateControl};
 
 static OD_extension_t ota_data_extension = {
 	.object = NULL,
 	.read = OD_read_fwUpdateData,
-	.write = OD_write_fwUpdateData
-};
+	.write = OD_write_fwUpdateData};
 
 /**
-  *
-  */
+ *
+ */
 void app_data_init()
 {
 	/* Setup extension and flags for triggering TPDO. */
 	if (
 		ODR_OK != OD_extension_init(OD_ENTRY_H5F00_fwUpdateControl, &ota_control_extension) ||
-		ODR_OK != OD_extension_init(OD_ENTRY_H5F02_fwUpdateData, &ota_data_extension)
-		)
+		ODR_OK != OD_extension_init(OD_ENTRY_H5F02_fwUpdateData, &ota_data_extension))
 	{
 		ErrorHandler(ERR_OD_INVALID);
 	}

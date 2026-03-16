@@ -15,3 +15,5 @@ JLinkLog.txt
 obj/
 bin/
 *.pyc
+*.bin
+*.elf

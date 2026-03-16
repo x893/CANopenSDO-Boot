@@ -295,45 +295,6 @@ void delay_sec(uint16_t sec)
 }
 
 /**
-  * @brief  usb 48M clock select
-  * @param  clk_s:USB_CLK_HICK, USB_CLK_HEXT
-  * @retval none
-  */
-static void usb_clock48m_select(usb_clk48_s clk_s)
-{
-	switch (system_core_clock)
-	{
-		/* 48MHz */
-	case 48000000:
-		crm_usb_clock_div_set(CRM_USB_DIV_1);
-		break;
-
-		/* 72MHz */
-	case 72000000:
-		crm_usb_clock_div_set(CRM_USB_DIV_1_5);
-		break;
-
-		/* 96MHz */
-	case 96000000:
-		crm_usb_clock_div_set(CRM_USB_DIV_2);
-		break;
-
-		/* 120MHz */
-	case 120000000:
-		crm_usb_clock_div_set(CRM_USB_DIV_2_5);
-		break;
-
-		/* 144MHz */
-	case 144000000:
-		crm_usb_clock_div_set(CRM_USB_DIV_3);
-		break;
-
-	default:
-		break;
-	}
-}
-
-/**
   * @brief  Initialize Timer
   * @param  none
   * @retval error

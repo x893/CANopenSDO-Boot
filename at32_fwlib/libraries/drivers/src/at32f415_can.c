@@ -48,6 +48,7 @@
   */
 void can_reset(can_type* can_x)
 {
+  (void)can_x;
   crm_periph_reset(CRM_CAN1_PERIPH_RESET, TRUE);
   crm_periph_reset(CRM_CAN1_PERIPH_RESET, FALSE);
 }

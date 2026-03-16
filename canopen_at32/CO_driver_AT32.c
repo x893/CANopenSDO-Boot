@@ -102,29 +102,6 @@ bool_t CANRxQueuePut(CAN_RX_QUEUE_TYPE* packet)
 	return result;
 }
 
-bool_t CANQueuePutMirror(CAN_RX_QUEUE_TYPE* rxPacket, CAN_TX_QUEUE_TYPE* txPacket)
-{
-	bool_t result = false;
-
-	if (rxPacket == NULL || txPacket == NULL)
-		return false;
-
-	CO_LOCK();
-	if ((canRxQueue.size < CAN_RX_QUEUE_SIZE) && (canTxQueue.size < CAN_TX_QUEUE_SIZE))
-	{
-		uint16_t rxPutPos = (canRxQueue.head + canRxQueue.size) & (CAN_RX_QUEUE_SIZE - 1);
-		uint16_t txPutPos = (canTxQueue.head + canTxQueue.size) & (CAN_TX_QUEUE_SIZE - 1);
-		memcpy((uint8_t*)&(canRxQueue.queue[rxPutPos]), (uint8_t*)rxPacket, sizeof(CAN_RX_QUEUE_TYPE));
-		memcpy((uint8_t*)&(canTxQueue.queue[txPutPos]), (uint8_t*)txPacket, sizeof(CAN_TX_QUEUE_TYPE));
-		canRxQueue.size++;
-		canTxQueue.size++;
-		result = true;
-	}
-	CO_UNLOCK();
-
-	return result;
-}
-
 static CAN_RX_QUEUE_TYPE* CANRxQueueGet(void)
 {
 	if (canRxQueue.size == 0)
@@ -480,10 +457,10 @@ void CO_CANinterrupt_RX(CAN_RX_QUEUE_TYPE* rxMsg)
 }
 
 /**
-  * @brief
+  * @brief Send and process receive packages
   *
   */
-void CANUpdate(void)
+void CANSendReceive(void)
 {
 	CAN_TX_QUEUE_TYPE* txQueueItem;
 	while ((txQueueItem = CANTxQueueGet()) != NULL)
@@ -493,9 +470,8 @@ void CANUpdate(void)
 
 		txPacket.frame_type = CAN_TFT_DATA;
 		if (CAN_Send(&txPacket) != ERR_NONE)
-		{
 			break;
-		}
+
 		CANTxQueueShift();
 	}
 

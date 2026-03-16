@@ -172,7 +172,7 @@ normal_boot:
 .thumb_func
 Default_Handler:
   b .
-
+/*
 .section .text._init,"ax",%progbits
 .thumb_func
 .type _init, %function
@@ -186,7 +186,7 @@ _init:
 .global _fini
 _fini:
   bx lr
-
+*/
 
 /* Weak aliases for exception handlers */
 .weak NMI_Handler

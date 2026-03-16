@@ -15,7 +15,7 @@
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xmlns:q1="http://www.canopen.org/xml/1.1" xsi:type="q1:ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="CANbp.xdd" fileCreator="" fileCreationDate="2026-03-08" fileCreationTime="13:12:11.0000000+03:00" fileModifiedBy="" fileModificationDate="2026-03-09" fileModificationTime="20:17:47.0782240+03:00" fileVersion="1" supportedLanguages="en" xmlns="">
+    <ProfileBody xmlns:q1="http://www.canopen.org/xml/1.1" xsi:type="q1:ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="CANbp.xdd" fileCreator="" fileCreationDate="2026-03-08" fileCreationTime="13:12:11.0000000+03:00" fileModifiedBy="" fileModificationDate="2026-03-15" fileModificationTime="09:40:54.8211411+03:00" fileVersion="1" supportedLanguages="en" xmlns="">
       <q1:DeviceIdentity>
         <q1:vendorName></q1:vendorName>
         <q1:vendorID></q1:vendorID>
@@ -322,7 +322,7 @@ OTA_STATE_ERROR = 0x05</description>
             <USINT />
             <q1:defaultValue value="0" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_OBJ_5F02" access="readWrite">
+          <q1:parameter uniqueID="UID_OBJ_5F02" access="write">
             <label lang="en">Fw Update Data</label>
             <BITSTRING />
           </q1:parameter>
@@ -377,7 +377,7 @@ OTA_STATE_ERROR = 0x05</description>
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xmlns:q2="http://www.canopen.org/xml/1.1" xsi:type="q2:ProfileBody_CommunicationNetwork_CANopen" formatName="CANopen" formatVersion="1.0" fileName="CANbp.xdd" fileCreator="" fileCreationDate="2026-03-08" fileCreationTime="13:12:11.0000000+03:00" fileModificationDate="2026-03-09" fileModificationTime="20:17:47.0782240+03:00" fileVersion="1" supportedLanguages="en" xmlns="">
+    <ProfileBody xmlns:q2="http://www.canopen.org/xml/1.1" xsi:type="q2:ProfileBody_CommunicationNetwork_CANopen" formatName="CANopen" formatVersion="1.0" fileName="CANbp.xdd" fileCreator="" fileCreationDate="2026-03-08" fileCreationTime="13:12:11.0000000+03:00" fileModificationDate="2026-03-15" fileModificationTime="09:40:54.8211411+03:00" fileVersion="1" supportedLanguages="en" xmlns="">
       <ApplicationLayers>
         <q2:CANopenObjectList>
           <CANopenObject index="1000" name="Device Type" objectType="7" PDOmapping="no" uniqueIDRef="UID_OBJ_1000" />

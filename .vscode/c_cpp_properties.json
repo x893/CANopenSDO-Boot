@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "name": "CANopenSDO-Boot",
+            "compilerPath": "arm-none-eabi-gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc",
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/canopen_at32",
+                "${workspaceFolder}/canopennode",
+                "${workspaceFolder}/app/boards",
+                "${workspaceFolder}/app/core",
+                "${workspaceFolder}/canopennode/301",
+                "${workspaceFolder}/od",
+                "${workspaceFolder}/at32_fwlib/libraries/cmsis/cm4/device_support",
+                "${workspaceFolder}/at32_fwlib/libraries/cmsis/cm4/core_support",
+                "${workspaceFolder}/at32_fwlib/libraries/drivers/inc"
+            ],
+            "defines": [
+                "_DEBUG",
+                "USE_FLASH=1"
+            ]
+        }
+    ],
+    "version": 4
+}
